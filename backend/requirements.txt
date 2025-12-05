@@ -1,6 +1,7 @@
 flask
 flask-cors
-sentence-transformers
+transformers
 torch
 numpy
 gunicorn
+python-dotenv
