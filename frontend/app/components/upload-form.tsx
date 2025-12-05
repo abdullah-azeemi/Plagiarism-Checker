@@ -21,6 +21,7 @@ export default function UploadForm() {
   const [detectionMode, setDetectionMode] = useState("both")
   const [isDragging, setIsDragging] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -71,19 +72,39 @@ export default function UploadForm() {
       return
     }
 
-    // In a real implementation, you would upload the file here
-    console.log('Uploading:', {
-      file: selectedFile.name,
-      assignmentName,
-      similarity,
-      fileTypes,
-      detectionMode
-    })
+    setIsAnalyzing(true)
 
-    // For now, redirect to results page
-    // TODO: Implement actual file upload and processing
-    alert('File upload functionality will be implemented with backend integration')
-    // router.push('/results')
+    try {
+      // Prepare form data
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+      formData.append('assignmentName', assignmentName)
+      formData.append('similarity', similarity.toString())
+      formData.append('fileTypes', JSON.stringify(fileTypes))
+      formData.append('detectionMode', detectionMode)
+
+      // Upload and analyze
+      const response = await fetch('http://localhost:5000/upload-and-analyze', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Upload failed')
+      }
+
+      const data = await response.json()
+
+      // Store results in sessionStorage and navigate
+      sessionStorage.setItem('plagiarismResults', JSON.stringify(data))
+      router.push('/results')
+    } catch (error: any) {
+      console.error('Upload error:', error)
+      alert(error.message || 'Failed to upload and analyze. Please ensure the backend is running.')
+    } finally {
+      setIsAnalyzing(false)
+    }
   }
 
   return (
@@ -243,9 +264,9 @@ export default function UploadForm() {
             <button
               onClick={handleSubmit}
               className="px-8 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-              disabled={!selectedFile || !assignmentName.trim()}
+              disabled={!selectedFile || !assignmentName.trim() || isAnalyzing}
             >
-              Check for Plagiarism
+              {isAnalyzing ? 'Analyzing...' : 'Check for Plagiarism'}
             </button>
           </div>
         </div>

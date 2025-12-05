@@ -1,247 +1,300 @@
 "use client"
 
-import { useState } from "react"
-import { ArrowLeft, ArrowRight, Download, Flag, AlertCircle } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { ArrowLeft, Download, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Card } from "@/components/ui/card"
+import Navigation from "../components/navigation"
+import Footer from "../components/footer"
+
+interface ComparisonData {
+  student1: string
+  student2: string
+  similarity: number
+  status: string
+  text1: string
+  text2: string
+  highlightedSegments?: Array<{
+    text1Index: number
+    text2Index: number
+    similarity: number
+  }>
+}
 
 export default function ComparisonPage() {
-  const [severity, setSeverity] = useState("medium")
-  const [currentMatch, setCurrentMatch] = useState(1)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [loading, setLoading] = useState(true)
+  const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const studentA = {
-    name: "Student A: John Doe",
-    file: "submission_A.py",
-    code: `def calculate_average(numbers):
-  """This function calculates the average of a list of numbers"""
-  total = sum(numbers)
-  count = len(numbers)
-  if count == 0:
-    return 0
-  average = total / count
-  return average
+  useEffect(() => {
+    // Get comparison data from URL params
+    const student1 = searchParams.get('student1')
+    const student2 = searchParams.get('student2')
+    const similarity = searchParams.get('similarity')
+    const status = searchParams.get('status')
 
-def another_function():
-  print("This is another function.")
+    if (!student1 || !student2) {
+      setError("Missing comparison data")
+      setLoading(false)
+      return
+    }
 
-def find_maximum(data_list):
-  """Finds the maximum value in a list"""
-  if not data_list:
-    return None
-  max_val = data_list[0]
-  for item in data_list:
-    if item > max_val:
-      max_val = item
-  return max_val`,
+    // For now, use the sessionStorage data to get the file contents
+    // In a real implementation, you'd fetch from backend
+    const resultsData = sessionStorage.getItem('plagiarismResults')
+    if (resultsData) {
+      const results = JSON.parse(resultsData)
+      // Store the pair info
+      setComparisonData({
+        student1: student1,
+        student2: student2,
+        similarity: parseFloat(similarity || '0'),
+        status: status || 'Unknown',
+        text1: `Content from ${student1}:\n\nThis is a placeholder for the actual file content.\nIn a production app, this would be fetched from the backend.\n\nThe similarity between these two files is ${similarity}%`,
+        text2: `Content from ${student2}:\n\nThis is a placeholder for the actual file content.\nIn a production app, this would be fetched from the backend.\n\nThe files have been marked as: ${status}`
+      })
+    }
+
+    setLoading(false)
+  }, [searchParams])
+
+  const getSimilarityColor = (score: number) => {
+    if (score >= 90) return "text-red-600"
+    if (score >= 75) return "text-orange-500"
+    return "text-yellow-600"
   }
 
-  const studentB = {
-    name: "Student B: Jane Smith",
-    file: "submission_B.py",
-    code: `def calculate_average(numbers):
-  """This function calculates the average of a list of numbers"""
-  total = sum(numbers)
-  count = len(numbers)
-  if count == 0:
-    return 0
-  average = total / count
-  return average
-
-def some_other_function():
-  print("This function is different.")
-
-def get_largest_number(values):
-  """Returns the largest number from a list"""
-  if not values:
-    return None
-  largest = values[0]
-  for val in values:
-    if val > largest:
-      largest = val
-  return largest`,
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Identical":
+        return "bg-red-100 text-red-800 border-red-200"
+      case "Flagged":
+        return "bg-orange-100 text-orange-800 border-orange-200"
+      case "Suspicious":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
   }
 
-  const highlightCode = (code: string, type: "exact" | "semantic" | "possible") => {
-    const lines = code.split("\n")
-    return lines.map((line, idx) => {
-      if (type === "exact" && (line.includes("total =") || line.includes("sum(") || line.includes("len("))) {
-        return (
-          <span key={idx} className="bg-red-100 line-through">
-            {line}
-          </span>
-        )
-      }
-      if (type === "semantic" && (line.includes("def") || line.includes("return"))) {
-        return (
-          <span key={idx} className="bg-orange-100">
-            {line}
-          </span>
-        )
-      }
-      if (type === "possible" && (line.includes("for") || line.includes("if"))) {
-        return (
-          <span key={idx} className="bg-yellow-100">
-            {line}
-          </span>
-        )
-      }
-      return <span key={idx}>{line}</span>
-    })
+  const handleExportReport = () => {
+    if (!comparisonData) return
+
+    // Create detailed text report
+    const report = `
+        PLAGIARISM DETECTION REPORT
+        Generated: ${new Date().toLocaleString()}
+        ================================================================================
+
+        COMPARISON DETAILS
+        Student 1: ${comparisonData.student1}
+        Student 2: ${comparisonData.student2}
+
+        SIMILARITY ANALYSIS
+        Similarity Score: ${comparisonData.similarity}%
+        Status: ${comparisonData.status}
+        Detection Method: AI-Powered BERT Model
+        Comparison Type: Pairwise Text Similarity
+
+        CLASSIFICATION
+        ${comparisonData.similarity >= 90 ? '⚠️  IDENTICAL - Extremely high similarity detected' :
+        comparisonData.similarity >= 75 ? '⚠️  FLAGGED - High similarity detected' :
+          '⚠️  SUSPICIOUS - Moderate similarity detected'}
+
+        ================================================================================
+
+        SUBMISSION 1: ${comparisonData.student1}
+        --------------------------------------------------------------------------------
+        ${comparisonData.text1}
+
+        ================================================================================
+
+        SUBMISSION 2: ${comparisonData.student2}
+        --------------------------------------------------------------------------------
+        ${comparisonData.text2}
+
+        ================================================================================
+
+        ANALYSIS SUMMARY
+        This report was automatically generated by the plagiarism detection system.
+        The similarity score of ${comparisonData.similarity}% was calculated using a BERT-based
+        machine learning model that analyzes text semantics and structure.
+
+        ${comparisonData.similarity >= 75 ? 'RECOMMENDATION: Manual review is strongly recommended due to high similarity.' : ''}
+
+        End of Report
+        ================================================================================
+    `.trim()
+
+    const blob = new Blob([report], { type: 'text/plain;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `comparison-report-${comparisonData.student1}-vs-${comparisonData.student2}.txt`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-6 py-12 mt-16">
+          <p className="text-center text-gray-600">Loading comparison...</p>
+        </div>
+      </main>
+    )
+  }
+
+  if (error || !comparisonData) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-6 py-12 mt-16">
+          <Card className="p-12 text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <p className="text-gray-600 mb-4">{error || "No comparison data found."}</p>
+            <Button onClick={() => router.push('/results')} className="bg-teal-600 hover:bg-teal-700 text-white">
+              Back to Results
+            </Button>
+          </Card>
+        </div>
+      </main>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      {/* Header */}
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
-              <span className="text-sm font-bold text-white">PD</span>
-            </div>
-            <span className="font-semibold text-gray-900">Plagiarism Detector</span>
-          </div>
-          <nav className="flex items-center gap-6">
-            <a href="#" className="text-sm text-gray-600 hover:text-gray-900">
-              Dashboard
-            </a>
-            <a href="#" className="text-sm text-gray-600 hover:text-gray-900">
-              All Submissions
-            </a>
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-orange-300 to-orange-400"></div>
-          </nav>
-        </div>
-      </header>
+    <main className="min-h-screen bg-gray-50">
+      <Navigation />
 
-      {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-6 py-8">
-        {/* Title Section */}
+      <div className="max-w-7xl mx-auto px-6 py-12 mt-16">
+        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Plagiarism Comparison</h1>
+          <Button
+            variant="outline"
+            onClick={() => router.push('/results')}
+            className="mb-4 gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Results
+          </Button>
+
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Detailed Comparison</h1>
           <p className="text-gray-600">
-            Comparing <span className="font-semibold">Student A (submission_A.py)</span> and{" "}
-            <span className="font-semibold">Student B (submission_B.py)</span>
+            Comparing <span className="font-semibold">{comparisonData.student1}</span> and{" "}
+            <span className="font-semibold">{comparisonData.student2}</span>
           </p>
         </div>
 
-        {/* Controls Section */}
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-              <ArrowLeft className="h-4 w-4" />
-              Previous Match
-            </Button>
-            <span className="text-sm text-gray-600">Match {currentMatch}</span>
-            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-              Next Match
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-              <Download className="h-4 w-4" />
-              Export as PDF
-            </Button>
-          </div>
+        {/* Statistics Card */}
+        <Card className="p-6 mb-8">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <p className="text-sm text-gray-600 mb-1">Similarity Score</p>
+              <p className={`text-4xl font-bold ${getSimilarityColor(comparisonData.similarity)}`}>
+                {comparisonData.similarity}%
+              </p>
+            </div>
 
-          <div className="flex items-center gap-2">
-            <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-              <AlertCircle className="h-3 w-3 mr-1" />
-              Mark as False Positive
-            </Badge>
-            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-              <Flag className="h-3 w-3 mr-1" />
-              Mark as Plagiarism
-            </Badge>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  Select Severity
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setSeverity("low")}>Low</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSeverity("medium")}>Medium</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSeverity("high")}>High</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div>
+              <p className="text-sm text-gray-600 mb-2">Status</p>
+              <Badge className={`${getStatusColor(comparisonData.status)} border text-base px-4 py-1`}>
+                {comparisonData.status}
+              </Badge>
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleExportReport} variant="outline" className="gap-2">
+                <Download className="w-4 h-4" />
+                Export Report
+              </Button>
+            </div>
           </div>
-        </div>
+        </Card>
 
         {/* Info Box */}
         <div className="mb-8 rounded-lg bg-blue-50 p-4 text-sm text-gray-700 border border-blue-200">
-          <p>
-            Code snippets are displayed side-by-side with synchronized scrolling. Sections with potential plagiarism are
-            highlighted: <span className="inline-block px-2 py-0.5 bg-red-200 rounded">Red for exact matches</span>,{" "}
-            <span className="inline-block px-2 py-0.5 bg-orange-200 rounded ml-2">
-              Orange for high semantic similarity
-            </span>
-            , and{" "}
-            <span className="inline-block px-2 py-0.5 bg-yellow-200 rounded ml-2">Yellow for possible similarity</span>.
-          </p>
-        </div>
-
-        {/* Code Comparison */}
-        <div className="grid grid-cols-2 gap-6">
-          {/* Student A */}
-          <div className="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
-            <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
-              <h3 className="font-semibold text-gray-900">{studentA.name}</h3>
-              <p className="text-sm text-gray-600">{studentA.file}</p>
-            </div>
-            <div className="p-6 overflow-x-auto max-h-96 overflow-y-auto bg-white">
-              <pre className="font-mono text-sm text-gray-800 whitespace-pre-wrap break-words">
-                <code className="text-xs leading-relaxed">
-                  {studentA.code.split("\n").map((line, idx) => (
-                    <div
-                      key={idx}
-                      className={`${
-                        line.includes("total") || line.includes("sum")
-                          ? "bg-red-100"
-                          : line.includes("def") || line.includes("return")
-                            ? "bg-orange-100"
-                            : line.includes("for") || line.includes("if")
-                              ? "bg-yellow-100"
-                              : ""
-                      }`}
-                    >
-                      {line}
-                    </div>
-                  ))}
-                </code>
-              </pre>
-            </div>
-          </div>
-
-          {/* Student B */}
-          <div className="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
-            <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
-              <h3 className="font-semibold text-gray-900">{studentB.name}</h3>
-              <p className="text-sm text-gray-600">{studentB.file}</p>
-            </div>
-            <div className="p-6 overflow-x-auto max-h-96 overflow-y-auto bg-white">
-              <pre className="font-mono text-sm text-gray-800 whitespace-pre-wrap break-words">
-                <code className="text-xs leading-relaxed">
-                  {studentB.code.split("\n").map((line, idx) => (
-                    <div
-                      key={idx}
-                      className={`${
-                        line.includes("total") || line.includes("sum")
-                          ? "bg-red-100"
-                          : line.includes("def") || line.includes("return")
-                            ? "bg-orange-100"
-                            : line.includes("for") || line.includes("if")
-                              ? "bg-yellow-100"
-                              : ""
-                      }`}
-                    >
-                      {line}
-                    </div>
-                  ))}
-                </code>
-              </pre>
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-blue-900 mb-1">About this comparison</p>
+              <p>
+                This view shows the content from both submissions side-by-side. The similarity score of{" "}
+                <span className="font-semibold">{comparisonData.similarity}%</span> was calculated using AI-powered
+                text analysis. {comparisonData.similarity >= 75 && "This is considered a high similarity match and should be reviewed carefully."}
+              </p>
             </div>
           </div>
         </div>
-      </main>
-    </div>
+
+        {/* Side-by-Side Comparison */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Student 1 */}
+          <Card className="overflow-hidden">
+            <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
+              <h3 className="font-semibold text-gray-900">{comparisonData.student1}</h3>
+              <p className="text-sm text-gray-600">Original Submission</p>
+            </div>
+            <div className="p-6">
+              <div className="bg-gray-50 rounded-lg p-4 max-h-[600px] overflow-y-auto">
+                <pre className="font-mono text-sm text-gray-800 whitespace-pre-wrap break-words">
+                  {comparisonData.text1}
+                </pre>
+              </div>
+            </div>
+          </Card>
+
+          {/* Student 2 */}
+          <Card className="overflow-hidden">
+            <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
+              <h3 className="font-semibold text-gray-900">{comparisonData.student2}</h3>
+              <p className="text-sm text-gray-600">Compared Submission</p>
+            </div>
+            <div className="p-6">
+              <div className="bg-gray-50 rounded-lg p-4 max-h-[600px] overflow-y-auto">
+                <pre className="font-mono text-sm text-gray-800 whitespace-pre-wrap break-words">
+                  {comparisonData.text2}
+                </pre>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Analysis Details */}
+        <Card className="p-6 mt-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Analysis Details</h3>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">Detection Method</span>
+              <span className="font-medium text-gray-900">AI-Powered BERT Model</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">Comparison Type</span>
+              <span className="font-medium text-gray-900">Pairwise Text Similarity</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">Status Classification</span>
+              <span className="font-medium text-gray-900">{comparisonData.status}</span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-gray-600">Similarity Threshold</span>
+              <span className="font-medium text-gray-900">
+                {comparisonData.similarity >= 90 ? "≥90% (Identical)" :
+                  comparisonData.similarity >= 75 ? "≥75% (Flagged)" :
+                    "≥50% (Suspicious)"}
+              </span>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <Footer />
+    </main>
   )
 }

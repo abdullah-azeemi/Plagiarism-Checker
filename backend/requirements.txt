@@ -5,3 +5,4 @@ torch
 numpy
 gunicorn
 python-dotenv
+python-docx

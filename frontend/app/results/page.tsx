@@ -1,14 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye, Download, Search } from "lucide-react"
 import Navigation from "../components/navigation"
 import Footer from "../components/footer"
+import { useRouter } from "next/navigation"
 
-// Sample suspicious pairs data
 interface SuspiciousPair {
   id: string
   student1: string
@@ -18,77 +18,60 @@ interface SuspiciousPair {
   matchedSentences: number
 }
 
-const samplePairs: SuspiciousPair[] = [
-  {
-    id: "1",
-    student1: "Alex Johnson",
-    student2: "Brad Smith",
-    similarity: 92,
-    status: "Identical",
-    matchedSentences: 12
-  },
-  {
-    id: "2",
-    student1: "Charlie Brown",
-    student2: "Diana Ross",
-    similarity: 85,
-    status: "Flagged",
-    matchedSentences: 8
-  },
-  {
-    id: "3",
-    student1: "Ethan Hunt",
-    student2: "Fiona Apple",
-    similarity: 78,
-    status: "Suspicious",
-    matchedSentences: 6
-  },
-  {
-    id: "4",
-    student1: "George Martin",
-    student2: "Hannah Montana",
-    similarity: 81,
-    status: "Flagged",
-    matchedSentences: 9
-  },
-  {
-    id: "5",
-    student1: "Ian Fleming",
-    student2: "Jane Doe",
-    similarity: 74,
-    status: "Suspicious",
-    matchedSentences: 5
-  },
-  {
-    id: "6",
-    student1: "Kevin Hart",
-    student2: "Lisa Simpson",
-    similarity: 88,
-    status: "Flagged",
-    matchedSentences: 10
-  },
-  {
-    id: "7",
-    student1: "Mike Ross",
-    student2: "Nina Simone",
-    similarity: 72,
-    status: "Suspicious",
-    matchedSentences: 4
-  },
-  {
-    id: "8",
-    student1: "Oscar Wilde",
-    student2: "Paula Abdul",
-    similarity: 76,
-    status: "Suspicious",
-    matchedSentences: 7
+interface AnalysisResults {
+  assignmentName: string
+  totalSubmissions: number
+  suspiciousPairs: SuspiciousPair[]
+  statistics: {
+    totalPairs: number
+    avgSimilarity: number
+    highRiskCount: number
   }
-]
+}
 
 export default function ResultsPage() {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [sortBy, setSortBy] = useState("similarity")
+  const [results, setResults] = useState<AnalysisResults | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const storedResults = sessionStorage.getItem('plagiarismResults')
+    if (storedResults) {
+      const data = JSON.parse(storedResults)
+      setResults(data)
+    }
+    setLoading(false)
+  }, [])
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-6 py-12 mt-16">
+          <p className="text-center text-gray-600">Loading results...</p>
+        </div>
+      </main>
+    )
+  }
+
+  if (!results) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-6 py-12 mt-16">
+          <Card className="p-12 text-center">
+            <p className="text-gray-600 mb-4">No analysis results found.</p>
+            <Button onClick={() => router.push('/upload')} className="bg-teal-600 hover:bg-teal-700 text-white">
+              Upload Files
+            </Button>
+          </Card>
+        </div>
+      </main>
+    )
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -109,7 +92,50 @@ export default function ResultsPage() {
     return "text-yellow-600"
   }
 
-  const filteredPairs = samplePairs
+  const handleExportCSV = () => {
+    if (!results) return
+
+    const headers = ['Student 1', 'Student 2', 'Similarity (%)', 'Status', 'Matched Sentences']
+    const rows = filteredPairs.map(pair => [
+      pair.student1,
+      pair.student2,
+      pair.similarity.toString(),
+      pair.status,
+      pair.matchedSentences.toString()
+    ])
+
+    const summaryRows = [
+      [],
+      ['Summary Statistics'],
+      ['Total Submissions', results.totalSubmissions.toString()],
+      ['Suspicious Pairs', results.statistics.totalPairs.toString()],
+      ['Average Similarity', `${results.statistics.avgSimilarity}%`],
+      ['High Risk Count', results.statistics.highRiskCount.toString()],
+      [],
+      ['Assignment', results.assignmentName],
+      ['Export Date', new Date().toLocaleString()]
+    ]
+
+    // Combine all data
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(',')),
+      ...summaryRows.map(row => row.join(','))
+    ].join('\n')
+
+    // Create download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `plagiarism-results-${results.assignmentName.replace(/\s+/g, '-')}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const filteredPairs = results.suspiciousPairs
     .filter(pair => {
       const matchesSearch =
         pair.student1.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -135,7 +161,7 @@ export default function ResultsPage() {
             Results Dashboard
           </h1>
           <p className="text-gray-600">
-            Suspicious Pairs - Analyzing 15 submissions
+            {results.assignmentName} - Analyzing {results.totalSubmissions} submissions
           </p>
         </div>
 
@@ -143,22 +169,22 @@ export default function ResultsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card className="p-6">
             <p className="text-sm text-gray-600 mb-1">Total Submissions</p>
-            <p className="text-3xl font-bold text-gray-900">15</p>
+            <p className="text-3xl font-bold text-gray-900">{results.totalSubmissions}</p>
           </Card>
           <Card className="p-6">
             <p className="text-sm text-gray-600 mb-1">Suspicious Pairs</p>
-            <p className="text-3xl font-bold text-orange-600">{samplePairs.length}</p>
+            <p className="text-3xl font-bold text-orange-600">{results.statistics.totalPairs}</p>
           </Card>
           <Card className="p-6">
             <p className="text-sm text-gray-600 mb-1">Avg. Similarity</p>
             <p className="text-3xl font-bold text-gray-900">
-              {Math.round(samplePairs.reduce((acc, p) => acc + p.similarity, 0) / samplePairs.length)}%
+              {results.statistics.avgSimilarity > 0 ? Math.round(results.statistics.avgSimilarity) : 0}%
             </p>
           </Card>
           <Card className="p-6">
             <p className="text-sm text-gray-600 mb-1">High Risk (≥90%)</p>
             <p className="text-3xl font-bold text-red-600">
-              {samplePairs.filter(p => p.similarity >= 90).length}
+              {results.statistics.highRiskCount}
             </p>
           </Card>
         </div>
@@ -208,7 +234,7 @@ export default function ResultsPage() {
             </div>
 
             {/* Export Button */}
-            <Button className="bg-teal-600 hover:bg-teal-700 text-white gap-2">
+            <Button onClick={handleExportCSV} className="bg-teal-600 hover:bg-teal-700 text-white gap-2">
               <Download className="w-4 h-4" />
               Export CSV
             </Button>
@@ -281,7 +307,18 @@ export default function ResultsPage() {
                     </div>
 
                     {/* View Details Button */}
-                    <Button className="bg-teal-600 hover:bg-teal-700 text-white gap-2">
+                    <Button
+                      onClick={() => {
+                        const params = new URLSearchParams({
+                          student1: pair.student1,
+                          student2: pair.student2,
+                          similarity: pair.similarity.toString(),
+                          status: pair.status
+                        })
+                        router.push(`/comparison?${params.toString()}`)
+                      }}
+                      className="bg-teal-600 hover:bg-teal-700 text-white gap-2"
+                    >
                       <Eye className="w-4 h-4" />
                       View Details
                     </Button>
