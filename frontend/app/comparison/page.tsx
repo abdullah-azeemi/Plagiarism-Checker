@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, Download, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -23,7 +23,7 @@ interface ComparisonData {
   }>
 }
 
-export default function ComparisonPage() {
+function ComparisonContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
@@ -143,10 +143,10 @@ export default function ComparisonPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
         <Navigation />
         <div className="max-w-7xl mx-auto px-6 py-12 mt-16">
-          <p className="text-center text-gray-600">Loading comparison...</p>
+          <p className="text-center text-gray-600 dark:text-gray-400">Loading comparison...</p>
         </div>
       </main>
     )
@@ -154,12 +154,12 @@ export default function ComparisonPage() {
 
   if (error || !comparisonData) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
         <Navigation />
         <div className="max-w-7xl mx-auto px-6 py-12 mt-16">
           <Card className="p-12 text-center">
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-gray-600 mb-4">{error || "No comparison data found."}</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{error || "No comparison data found."}</p>
             <Button onClick={() => router.push('/results')} className="bg-teal-600 hover:bg-teal-700 text-white">
               Back to Results
             </Button>
@@ -170,7 +170,7 @@ export default function ComparisonPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <Navigation />
 
       <div className="max-w-7xl mx-auto px-6 py-12 mt-16">
@@ -185,8 +185,8 @@ export default function ComparisonPage() {
             Back to Results
           </Button>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Detailed Comparison</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Detailed Comparison</h1>
+          <p className="text-gray-600 dark:text-gray-400">
             Comparing <span className="font-semibold">{comparisonData.student1}</span> and{" "}
             <span className="font-semibold">{comparisonData.student2}</span>
           </p>
@@ -296,5 +296,20 @@ export default function ComparisonPage() {
 
       <Footer />
     </main>
+  )
+}
+
+export default function ComparisonPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-6 py-12 mt-16">
+          <p className="text-center text-gray-600 dark:text-gray-400">Loading comparison...</p>
+        </div>
+      </main>
+    }>
+      <ComparisonContent />
+    </Suspense>
   )
 }

@@ -1,3 +1,5 @@
+"use client"
+
 import Features from "./components/features"
 import HowItWorks from "./components/how-it-works"
 import WhyChooseUs from "./components/why-choose-us"
@@ -8,7 +10,7 @@ import Hero from "./components/hero"
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
       <Navigation />
       <Hero />
       <Features />

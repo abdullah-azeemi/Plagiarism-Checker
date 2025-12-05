@@ -59,11 +59,11 @@ export default function ResultsPage() {
 
   if (!results) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
         <Navigation />
         <div className="max-w-7xl mx-auto px-6 py-12 mt-16">
           <Card className="p-12 text-center">
-            <p className="text-gray-600 mb-4">No analysis results found.</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">No analysis results found.</p>
             <Button onClick={() => router.push('/upload')} className="bg-teal-600 hover:bg-teal-700 text-white">
               Upload Files
             </Button>
@@ -109,7 +109,7 @@ export default function ResultsPage() {
       ['Summary Statistics'],
       ['Total Submissions', results.totalSubmissions.toString()],
       ['Suspicious Pairs', results.statistics.totalPairs.toString()],
-      ['Average Similarity', `${results.statistics.avgSimilarity}%`],
+      ['Average Similarity', `${results.statistics.avgSimilarity}% `],
       ['High Risk Count', results.statistics.highRiskCount.toString()],
       [],
       ['Assignment', results.assignmentName],
@@ -128,7 +128,7 @@ export default function ResultsPage() {
     const link = document.createElement('a')
     const url = URL.createObjectURL(blob)
     link.setAttribute('href', url)
-    link.setAttribute('download', `plagiarism-results-${results.assignmentName.replace(/\s+/g, '-')}.csv`)
+    link.setAttribute('download', `plagiarism - results - ${results.assignmentName.replace(/\s+/g, '-')}.csv`)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
@@ -151,16 +151,16 @@ export default function ResultsPage() {
     })
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <Navigation />
 
       <div className="max-w-7xl mx-auto px-6 py-12 mt-16">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
             Results Dashboard
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             {results.assignmentName} - Analyzing {results.totalSubmissions} submissions
           </p>
         </div>
@@ -169,21 +169,21 @@ export default function ResultsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card className="p-6">
             <p className="text-sm text-gray-600 mb-1">Total Submissions</p>
-            <p className="text-3xl font-bold text-gray-900">{results.totalSubmissions}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{results.totalSubmissions}</p>
           </Card>
           <Card className="p-6">
             <p className="text-sm text-gray-600 mb-1">Suspicious Pairs</p>
-            <p className="text-3xl font-bold text-orange-600">{results.statistics.totalPairs}</p>
+            <p className="text-3xl font-bold text-orange-600 dark:text-gray-100">{results.statistics.totalPairs}</p>
           </Card>
           <Card className="p-6">
             <p className="text-sm text-gray-600 mb-1">Avg. Similarity</p>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
               {results.statistics.avgSimilarity > 0 ? Math.round(results.statistics.avgSimilarity) : 0}%
             </p>
           </Card>
           <Card className="p-6">
             <p className="text-sm text-gray-600 mb-1">High Risk (≥90%)</p>
-            <p className="text-3xl font-bold text-red-600">
+            <p className="text-3xl font-bold text-red-600 dark:text-gray-100">
               {results.statistics.highRiskCount}
             </p>
           </Card>
@@ -192,52 +192,51 @@ export default function ResultsPage() {
         {/* Filters and Controls */}
         <Card className="p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search by student name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
+            {/* Filters and Search */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-8">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search by student name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+
+              <div className="flex gap-4">
+                {/* Status Filter */}
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="all">All Status</option>
+                  <option value="Identical">Identical</option>
+                  <option value="Flagged">Flagged</option>
+                  <option value="Suspicious">Suspicious</option>
+                </select>
+
+                {/* Sort By */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="similarity">Sort by Similarity</option>
+                  <option value="student1">Sort by Student 1</option>
+                  <option value="student2">Sort by Student 2</option>
+                </select>
+
+                {/* Export Button */}
+                <Button onClick={handleExportCSV} className="bg-teal-600 hover:bg-teal-700 text-white gap-2">
+                  <Download className="w-4 h-4" />
+                  Export CSV
+                </Button>
+              </div>
             </div>
 
-            {/* Filter by Status */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Filter:</span>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="all">All Status</option>
-                <option value="Identical">Identical</option>
-                <option value="Flagged">Flagged</option>
-                <option value="Suspicious">Suspicious</option>
-              </select>
-            </div>
-
-            {/* Sort */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="similarity">Similarity</option>
-                <option value="student1">Student 1</option>
-                <option value="student2">Student 2</option>
-              </select>
-            </div>
-
-            {/* Export Button */}
-            <Button onClick={handleExportCSV} className="bg-teal-600 hover:bg-teal-700 text-white gap-2">
-              <Download className="w-4 h-4" />
-              Export CSV
-            </Button>
           </div>
         </Card>
 
@@ -254,21 +253,21 @@ export default function ResultsPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-4 mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-                          <span className="text-teal-700 font-semibold text-sm">
+                        <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center dark:text-white-400">
+                          <span className="text-teal-700 font-semibold text-sm dark:text-gray-100">
                             {pair.student1.split(' ').map(n => n[0]).join('')}
                           </span>
                         </div>
-                        <span className="font-medium text-gray-900">{pair.student1}</span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{pair.student1}</span>
                       </div>
-                      <span className="text-gray-400">↔</span>
+                      <span className="text-gray-400 dark:text-gray-100">↔</span>
                       <div className="flex items-center gap-2">
                         <div className="w-10 h-10 bg-cyan-100 rounded-full flex items-center justify-center">
-                          <span className="text-cyan-700 font-semibold text-sm">
+                          <span className="text-cyan-700 font-semibold text-sm dark:text-gray-100">
                             {pair.student2.split(' ').map(n => n[0]).join('')}
                           </span>
                         </div>
-                        <span className="font-medium text-gray-900">{pair.student2}</span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{pair.student2}</span>
                       </div>
                     </div>
 
@@ -276,7 +275,7 @@ export default function ResultsPage() {
                       <Badge className={`${getStatusColor(pair.status)} border`}>
                         {pair.status}
                       </Badge>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 dark:text-gray-100">
                         {pair.matchedSentences} matched sentences
                       </span>
                     </div>

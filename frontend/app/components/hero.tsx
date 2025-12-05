@@ -5,7 +5,7 @@ export default function Hero() {
     <section className="pt-32 pb-20 px-4">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div>
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight mb-6">
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight mb-6 dark:text-white">
             Streamline Plagiarism Detection for All Your Student Assignments
           </h1>
           <p className="text-gray-600 text-lg mb-8 leading-relaxed">

@@ -91,7 +91,7 @@ export default function CheckPage() {
     }
 
     return (
-        <main className="min-h-screen bg-gray-50">
+        <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
             <Navigation />
 
             <div className="max-w-7xl mx-auto px-6 py-12">
@@ -101,10 +101,10 @@ export default function CheckPage() {
                         <FileText className="w-5 h-5" />
                         <span className="text-sm font-medium">Plagiarism Detector</span>
                     </div>
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                    <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                         Check Document for Plagiarism
                     </h1>
-                    <p className="text-gray-600">
+                    <p className="text-gray-600 dark:text-gray-400">
                         Compare two texts to detect similarities and potential plagiarism.
                     </p>
                 </div>

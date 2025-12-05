@@ -108,7 +108,7 @@ export default function UploadForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 transition-colors">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -116,10 +116,29 @@ export default function UploadForm() {
             <FileArchive className="w-5 h-5" />
             <span className="text-sm font-medium">Plagiarism Detection</span>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Upload and Analyze Submissions</h1>
-          <p className="text-gray-600">Upload student assignments in a .zip file to check for plagiarism and similarities.</p>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">Upload and Analyze Submissions</h1>
+          <p className="text-gray-600 dark:text-gray-400">Upload student assignments in a .zip file to check for plagiarism and similarities.</p>
         </div>
 
+        {/* Progress Overlay */}
+        {isAnalyzing && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
+              <div className="text-center">
+                <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Analyzing Submissions</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Processing your files and performing pairwise comparisons...
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-500">
+                  This may take 30-60 seconds depending on file count
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Upload Area */}
         {/* Upload Area */}
         <div
           onDragOver={handleDragOver}
