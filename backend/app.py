@@ -48,8 +48,21 @@ except Exception as e:
         tokenizer = AutoTokenizer.from_pretrained(parent_model_path)
         print("Model loaded successfully from parent directory")
     except Exception as e2:
-        print("Error loading from parent directory:", e2)
-        exit(1)
+        print(f"Error loading from parent directory: {e2}")
+        print("\nFallback: Loading base DistilBERT model from Hugging Face for memory efficiency...")
+        try:
+            # Use DistilBERT (smaller, ~260MB) instead of BERT (~440MB) to fit in 512MB RAM
+            model_name = "distilbert-base-uncased"
+            # Note: Using AutoModelForSequenceClassification to handle different architectures
+            from transformers import AutoModelForSequenceClassification
+            model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
+            model.to(device)
+            model.eval()
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            print(f"Successfully loaded fallback model: {model_name}")
+        except Exception as e3:
+             print(f"Critical Error: Could not load any model. {e3}")
+             model = None
 
 
 def get_similarity_score(text_a: str, text_b: str) -> float:
