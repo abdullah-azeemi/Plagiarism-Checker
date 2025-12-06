@@ -37,7 +37,7 @@ export default function CheckPage() {
         setIsAnalyzing(true)
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+            const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://abdullah-azeemi-paraphrase-detector.hf.space'
             const response = await fetch(`${apiUrl}/analyze-simple`, {
                 method: "POST",
                 headers: {

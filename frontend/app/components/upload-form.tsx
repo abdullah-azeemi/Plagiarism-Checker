@@ -84,7 +84,7 @@ export default function UploadForm() {
       formData.append('detectionMode', detectionMode)
 
       // Upload and analyze
-      const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+      const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://abdullah-azeemi-paraphrase-detector.hf.space'
       const response = await fetch(`${apiUrl}/upload-and-analyze`, {
         method: 'POST',
         body: formData,

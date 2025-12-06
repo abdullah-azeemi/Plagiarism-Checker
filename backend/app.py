@@ -52,8 +52,8 @@ except Exception as e:
         print("\nFallback: Loading base DistilBERT model from Hugging Face for memory efficiency...")
         try:
             # Use DistilBERT (smaller, ~260MB) instead of BERT (~440MB) to fit in 512MB RAM
+            # model_name = "distilbert-base-uncased"
             model_name = "distilbert-base-uncased"
-            # Note: Using AutoModelForSequenceClassification to handle different architectures
             from transformers import AutoModelForSequenceClassification
             model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
             model.to(device)
